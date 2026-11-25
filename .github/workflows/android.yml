@@ -1,0 +1,76 @@
+name: Сборка Android APK
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Сборка APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Получить код репозитория
+        uses: actions/checkout@v6
+
+      - name: Установить Java 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Установить Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: |- 
+            platforms;android-35
+            build-tools;35.0.0
+
+      - name: Установить Gradle 8.7
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: "8.7"
+
+      - name: Распаковать исходники
+        run: |
+          base64 --decode PortfolioTerminal-source.zip.b64 > PortfolioTerminal-source.zip
+          mkdir source
+          unzip -q PortfolioTerminal-source.zip -d source
+
+      - name: Собрать APK
+        run: gradle --no-daemon -p source assembleDebug
+
+      - name: Подготовить APK
+        run: cp source/app/build/outputs/apk/debug/app-debug.apk PortfolioTerminal-1.0.0.apk
+
+      - name: Сохранить APK как артефакт сборки
+        uses: actions/upload-artifact@v4
+        with:
+          name: PortfolioTerminal-1.0.0
+          path: PortfolioTerminal-1.0.0.apk
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    name: Опубликовать APK в релизе
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Скачать APK из сборки
+        uses: actions/download-artifact@v4
+        with:
+          name: PortfolioTerminal-1.0.0
+
+      - name: Опубликовать APK в GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Портфельный терминал 1.0.0
+          generate_release_notes: true
+          files: PortfolioTerminal-1.0.0.apk
