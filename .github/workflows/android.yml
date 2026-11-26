@@ -36,7 +36,7 @@ jobs:
 
       - name: Распаковать исходники
         run: |
-          base64 --decode PortfolioTerminal-source-v1.0.1.zip.b64 > PortfolioTerminal-source.zip
+          base64 --decode PortfolioTerminal-source-v1.0.1-r2.zip.b64 > PortfolioTerminal-source.zip
           mkdir source
           unzip -q PortfolioTerminal-source.zip -d source
 
